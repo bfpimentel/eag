@@ -1,11 +1,11 @@
 services:
   eag-api:
-    image: ghcr.io/bfpimentel/bitwarden-alias-provider-api:latest
+    image: ghcr.io/bfpimentel/eag-api:latest
     env_file: .env
     ports:
       - "6123:6123"
   eag-web:
-    image: ghcr.io/bfpimentel/bitwarden-alias-provider-web:latest
+    image: ghcr.io/bfpimentel/eag-web:latest
     environment:
       SERVER_ADDRESS: http://eag-api:6123
     ports:

@@ -1,4 +1,4 @@
-name: Publish EAG images and extension
+name: Publish EAG images
 on:
   push:
     branches: [main]
@@ -38,14 +38,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-  extension:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile
-      - run: bun run build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: eag-browser-extension
-          path: apps/web/dist

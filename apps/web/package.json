@@ -14,6 +14,7 @@
     "@eag/providers": "workspace:*",
     "@mantine/core": "^8.3.0",
     "@mantine/hooks": "^8.3.0",
+    "@mantine/notifications": "^8.3.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

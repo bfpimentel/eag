@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { wordlist } from "./words";
 import { generateAlias, optionsString, parseOptions } from "./index";
 
 describe("Bitwarden options", () => {
@@ -11,6 +12,7 @@ describe("Bitwarden options", () => {
       parseOptions(input),
     );
   });
+
   test("supports fixed aliases", () => {
     expect(
       generateAlias(
@@ -18,6 +20,7 @@ describe("Bitwarden options", () => {
       ),
     ).toBe("shop");
   });
+
   test("rejects invalid templates and lengths", () => {
     expect(() =>
       generateAlias(
@@ -30,8 +33,18 @@ describe("Bitwarden options", () => {
       ),
     ).toThrow();
   });
+
   test("generates different aliases with a random suffix", () => {
     const config = parseOptions("domain=example.com,destination=me@example.com");
     expect(generateAlias(config)).not.toBe(generateAlias(config));
+  });
+
+  test("selects readable words from the larger curated list", () => {
+    expect(wordlist).toHaveLength(2048);
+    const config = parseOptions("domain=example.com,destination=me@example.com");
+    const [first, second, suffix] = generateAlias(config).split("_");
+    expect(wordlist).toContain(first);
+    expect(wordlist).toContain(second);
+    expect(suffix).toMatch(/^[0-9a-f]{12}$/);
   });
 });

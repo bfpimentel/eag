@@ -3,6 +3,8 @@ import { afterEach, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MantineProvider } from "@mantine/core";
+import { Notifications, notifications } from "@mantine/notifications";
+import { useAppStore } from "./stores/appStore";
 import App from "./App";
 
 vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -22,9 +24,13 @@ vi.stubGlobal("matchMedia", () => ({
   removeEventListener() {},
 }));
 
-afterEach(() => document.body.replaceChildren());
+afterEach(() => {
+  notifications.clean();
+  useAppStore.setState({ status: null });
+  document.body.replaceChildren();
+});
 
-it("renders the main UI", async () => {
+it("mounts the app and displays operation errors as toasts", async () => {
   const element = document.createElement("div");
   document.body.append(element);
   const root = createRoot(element);
@@ -32,11 +38,18 @@ it("renders the main UI", async () => {
   await act(async () => {
     root.render(
       <MantineProvider defaultColorScheme="dark">
+        <Notifications />
         <App />
       </MantineProvider>,
     );
   });
+  expect(element.textContent).toContain("EAG");
 
-  expect(element.textContent).toContain("Easy Alias Generator");
+  await act(async () => {
+    useAppStore.setState({ status: { type: "error", message: "Connection failed" } });
+  });
+  expect(document.body.textContent).toContain("Connection failed");
+  expect(element.textContent).not.toContain("Connection failed");
+
   await act(async () => root.unmount());
 });

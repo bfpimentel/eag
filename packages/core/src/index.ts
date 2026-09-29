@@ -1,3 +1,5 @@
+import { wordlist } from "./words";
+
 export interface AliasConfig {
   domain: string;
   destination: string;
@@ -53,27 +55,6 @@ export function optionsString(config: AliasConfig): string {
   return parts.join(",");
 }
 
-const words = [
-  "amber",
-  "bright",
-  "calm",
-  "clear",
-  "cool",
-  "gentle",
-  "green",
-  "happy",
-  "hidden",
-  "little",
-  "lively",
-  "mellow",
-  "quiet",
-  "silver",
-  "soft",
-  "swift",
-  "warm",
-  "wild",
-];
-
 function random(max: number): number {
   const bytes = new Uint32Array(1);
   const limit = Math.floor(0x100000000 / max) * max;
@@ -119,7 +100,7 @@ export function generateAlias(config: AliasConfig): string {
     if (part === "<hex>") return hex(hexLength);
     const slug = Array.from(
       { length: slugLength },
-      () => words[random(words.length)],
+      () => wordlist[random(wordlist.length)],
     ).join(config.slugSeparator ?? "_");
     return `${slug}_${hex(12)}`;
   });
