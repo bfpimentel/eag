@@ -1,44 +1,15 @@
 name: PR Checks
 on:
   pull_request:
-    branches: ["main"]
+    branches: [main]
 jobs:
-  server-check:
+  check:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./server
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          cache-dependency-glob: server/uv.lock
-      - name: Install dependencies
-        run: uv sync --locked
-      - name: Lint with Ruff
-        run: uv run --with ruff ruff check .
-  web-check:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./web
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-          cache: 'bun'
-          cache-dependency-path: web/bun.lock
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      - name: Lint
-        run: bun run lint
-      - name: Build & Type Check
-        run: bun run build
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run format:check
+      - run: bun run build
+      - run: bun run test

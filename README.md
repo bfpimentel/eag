@@ -1,114 +1,31 @@
-# Bitwarden Alias Provider
+# EAG — Easy Alias Generator
 
-![Docker Image Version (latest semver)](https://img.shields.io/github/v/tag/bfpimentel/bitwarden-alias-provider?label=latest&logo=github&style=flat-square)
-![GitHub last commit](https://img.shields.io/github/last-commit/bfpimentel/bitwarden-alias-provider?logo=github&style=flat-square)
+EAG creates and manages forwarding email aliases on **Purelymail** and **MXRoute**. It has a self-hosted web app and API. The API talks to the email providers: browsers cannot call their APIs directly because of CORS. The same API supports Bitwarden's Addy.io-compatible forwarded-email generator.
 
-This service mimics the Addy.io API to allow Bitwarden to generate email aliases directly on your email providers. It uses `coolname` for human-readable aliases. These services are supported at this moment:
+## Run EAG
 
-- Purelymail
-- MXRoute
+1. Copy `.env.example` to `.env` and set a long random `SERVER_API_TOKEN`.
+2. For standalone API use, Bitwarden integration, or server-default provider settings, also configure `ALIAS_PROVIDER` and its provider credentials in `.env`.
+3. Start both services using `docker compose -f docker-compose.example.yml up -d` (or `bun install`, `bun run api`, and `bun run dev` in separate terminals).
+4. Visit `http://localhost:6124`, enter the server token, domain and forwarding destination, and manage aliases. The default server URL `/api` goes through the web server to EAG's API. The API itself listens on `http://localhost:6123`.
 
-## ⚠️ Disclaimer
+The web UI can also choose a provider and enter its credentials for the **current session** instead of using the server's environment defaults. The browser sends them to **your** authenticated API, which calls the provider; it does not call Purelymail or MXRoute directly. The token and provider credentials stay in browser memory and are cleared on reload. Domain, destination, and generation options are saved in browser local storage. Use HTTPS if accessing EAG across a network.
 
-Although there's authentication to the app, diligence is needed when exposing this utility to the public.
+To run the API alone, set `SERVER_API_TOKEN`, `ALIAS_PROVIDER`, and provider credentials. It serves authenticated `POST /add/<path>`, `GET /list/<domain>`, and `DELETE /delete/<email>`. Bitwarden and other standalone clients use the environment-configured provider; session-only settings from the web UI are **not** stored on the server. `SERVER_API_TOKEN` must be configured on the server even if provider credentials are supplied through the UI. Do not publish `.env`.
 
-I'm not responsible for any compromised data.
+For a web UI hosted separately from the API, enter its full server URL in the UI and set `EAG_ALLOWED_ORIGINS` on the API to that web origin. The bundled web server proxies `/api` to the API using `SERVER_ADDRESS` (default `http://eag-api:6123` in Docker); Vite proxies `/api` to `http://localhost:6123` by default. GitHub Pages deployment is no longer supported. The browser extension artifact also needs a full server URL rather than `/api`; if your API checks request origins, allow that extension's origin with `EAG_ALLOWED_ORIGINS`.
 
-## Usage
+## Bitwarden integration
 
-### Environment Variables
-1. Configure the environment variables in a `.env` file or use them directly inside your `docker-compose.yml`:
-   ```bash
-   SERVER_API_TOKEN=your_secure_token_here
-   ALIAS_PROVIDER=<your_provider> # available options: mxroute, purelymail
+Open **Bitwarden integration** in the web UI to produce the Addy.io options string. In Bitwarden select **Generator → Username → Forwarded email alias → Addy.io**. Paste the string into **Email domain**, set **API Key** to `SERVER_API_TOKEN`, and set **Self-host server URL** to `https://your-eag-api.example/add`. Bitwarden must be able to reach the API and requires a provider configured on the server via environment variables.
 
-   # "mxroute" ALIAS_PROVIDER
-   MXROUTE_SERVER=<your_server>.mxrouting.net
-   MXROUTE_USERNAME=<control_pane_username>
-   MXROUTE_API_KEY=<control_pane_api_key>
-
-   # "purelymail" ALIAS_PROVIDER
-   PURELYMAIL_API_KEY=<api_key>
-
-   SERVER_ADDRESS=http://bitwarden-alias-provider-server:6123 # Optional for web app
-   ```
-2. Grab the example docker-compose file from [here](./docker-compose.example.yml).
-3. Start the service:
-   ```bash
-   docker-compose up -d
-   ```
-
-The application will be running on `http://localhost:6123` by default.
-
-## How to use
-
-Configure Bitwarden's "Generator" Tab:
-
-1. Type: Forwarded email alias
-2. Service: Addy.io
-3. Email domain:
-    1. Since we are "hacking" the Addy.io API spec for this plugin to work, all the customization is done through this field. The Web UI has an options configurator for ease of use, although optional
-    2. Refer to the **Available Options** section below
-4. **API Key:** Use the value of `SERVER_API_TOKEN`
-5. **Self-host server URL:** `http://<server_address>:6123/add`
-6. Click the **"Generate email"** icon
-
-### Available Options
-
-Configure these in the "Email domain" field using `key=value` format, separated by commas.
-
-| Option | Type | Required | Default | Description |
-|--------|------|----------|---------|-------------|
-| `domain` | String | yes | None | The domain to create the alias on. |
-| `destination` | String | yes | None | The destination email address. |
-| `template` | String | no | `<slug>` | Format template. Allowed: `<slug>`, `<hex>`. |
-| `prefix` | String | no | None | Prefix added to the alias. |
-| `suffix` | String | no | None | Suffix added to the alias. |
-| `hex_length` | Number | no | 6 | Length of the random hex string. |
-| `slug_length` | Number | no | 2 | Number of words in the slug. |
-| `slug_separator` | String | no | _ | Separator between slug words. |
-| `alias_separator` | String | no | _ | Separator between alias components. |
-
-**Example Input:**
-`domain=test.com,destination=hello@test.com,prefix=foo,template=<slug><hex>,alias_separator=-`
-
-**Result:** `foo-good_morning-8ed379@test.com`
-
-> **Note:** If you encounter issues, try clearing the extension cache.
-
-## Web App & API
-
-This project includes a web interface for managing aliases and an API for direct access.
-
-- **Web App:** `http://localhost:6124` (default)
-- **API Status:** `GET /`
-- **List Aliases:** `GET /list/<domain>`
-- **Add Alias:** `POST /add`
-- **Delete Alias:** `DELETE /delete/<alias_email>`
-
-## Browser Extensions
-
-This project provides a helper browser extension (Chrome & Firefox) that allows you to easily generate option strings and manage your aliases without opening the full web app.
-
-1.  **Download:** Download the `bitwarden-alias-provider-extension.zip` from the latest [GitHub Actions run](https://github.com/bfpimentel/bitwarden-alias-provider/actions)
-2.  **Unzip:** Extract the zip file to a folder
-
-### Chromium Browsers
-
-1.  Go to `chrome://extensions/`
-2.  Enable **Developer mode** (top right toggle)
-3.  Click **Load unpacked**
-4.  Select the folder where you extracted the extension
-
-### Firefox
-
-1.  Go to `about:debugging#/runtime/this-firefox`
-2.  Click **Load Temporary Add-on...**
-3.  Select the `manifest.json` file inside the extracted folder
+Supported options are `domain`, `destination`, `template` (`<slug>` and/or `<hex>`), `prefix`, `suffix`, `slug_length`, `hex_length`, `slug_separator`, `alias_separator`, and `static`. Generated slugs include a random hexadecimal suffix; their names differ from the old Python `coolname` generator.
 
 ## Development
 
-The only method that I support right now is using a Nix shell.
+- `apps/api`: Bun HTTP API, with environment defaults and authenticated session provider overrides.
+- `apps/web`: React + Mantine web app, served by Nginx or Vite.
+- `packages/core`: alias generation and Bitwarden options parsing.
+- `packages/providers`: shared `Provider` interface and MXRoute/Purelymail adapters. User-supplied provider loading is out of scope.
 
-1. Enter the development shell: `nix develop`
-2. Run services: `docker compose up`
+Run `bun run check` from the repository root to lint, check formatting, test, and build. Run `bun run format` to format using Oxfmt (88-column target, semicolons, double quotes). Existing Python server deployments can migrate their provider environment variables and Bitwarden settings to `apps/api`; verify alias naming before retiring them.

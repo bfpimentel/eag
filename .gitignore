@@ -8,3 +8,5 @@ __pycache__
 .direnv
 
 docker-compose.yml
+node_modules/
+*.tsbuildinfo

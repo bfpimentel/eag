@@ -1,0 +1,12 @@
+{
+  "name": "@eag/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@eag/core": "workspace:*",
+    "@eag/providers": "workspace:*"
+  }
+}

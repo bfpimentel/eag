@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+**/.venv
+**/.pytest_cache
+**/.ruff_cache
+.git
+.env
+*.tsbuildinfo

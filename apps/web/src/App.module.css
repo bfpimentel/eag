@@ -1,0 +1,19 @@
+.shell {
+  background: #0d0e10;
+  min-height: 100vh;
+}
+.header {
+  background: #111215;
+  border-bottom: 1px solid #303136;
+}
+.empty {
+  padding: 42px 20px;
+  text-align: center;
+  color: #96979d;
+  border: 1px dashed #38393e;
+  border-radius: 8px;
+}
+.row {
+  border-top: 1px solid #303136;
+  padding: 14px 0;
+}

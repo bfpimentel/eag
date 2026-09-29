@@ -1,106 +1,51 @@
-name: Create and publish a Docker image
+name: Publish EAG images and extension
 on:
   push:
-    branches: ['main']
-    tags: ['v*']
-env:
-  REGISTRY: ghcr.io
-  SERVER_IMAGE_NAME: ${{ github.repository }}-server
-  WEB_IMAGE_NAME: ${{ github.repository }}-web
+    branches: [main]
+    tags: ["v*"]
+permissions:
+  contents: read
+  packages: write
 jobs:
-  build-and-push-server-image:
+  images:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    strategy:
+      matrix:
+        include:
+          - target: web
+            file: apps/web/Dockerfile
+          - target: api
+            file: apps/api/Dockerfile
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
+      - uses: docker/metadata-action@v5
         id: meta
-        uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.SERVER_IMAGE_NAME }}
+          images: ghcr.io/${{ github.repository }}-${{ matrix.target }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha
             type=ref,event=tag
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v6
         with:
           context: .
-          file: server/Dockerfile
+          file: ${{ matrix.file }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-  build-and-push-web-image:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=sha
-            type=ref,event=tag
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: web/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-  build-and-push-extension:
+  extension:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - uses: actions/upload-artifact@v4
         with:
-          fetch-depth: 0
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-          cache: 'bun'
-          cache-dependency-path: web/bun.lock
-      - name: Set and Update Version
-        working-directory: ./web
-        run: |
-          git fetch --tags --force
-
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          VERSION=${LATEST_TAG#v}
-
-          jq --arg v "$VERSION" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
-          jq --arg v "$VERSION" '.version = $v | .version_name = $v' public/manifest.json > public/manifest.json.tmp && mv public/manifest.json.tmp public/manifest.json
-      - name: Install dependencies
-        working-directory: ./web
-        run: bun install --frozen-lockfile
-      - name: Build
-        working-directory: ./web
-        run: bun run build
-      - name: Upload Extension
-        uses: actions/upload-artifact@v4
-        with:
-          name: bitwarden-alias-provider-extension
-          path: web/dist
+          name: eag-browser-extension
+          path: apps/web/dist

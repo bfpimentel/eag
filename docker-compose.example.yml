@@ -1,15 +1,14 @@
 services:
-  bitwarden-alias-provider-server:
-    container_name: bitwarden-alias-provider-server
-    image: ghcr.io/bfpimentel/bitwarden-alias-provider-server:latest
+  eag-api:
+    image: ghcr.io/bfpimentel/bitwarden-alias-provider-api:latest
     env_file: .env
     ports:
       - "6123:6123"
-  bitwarden-alias-provider-web:
-    container_name: bitwarden-alias-provider-web
+  eag-web:
     image: ghcr.io/bfpimentel/bitwarden-alias-provider-web:latest
-    env_file: .env
+    environment:
+      SERVER_ADDRESS: http://eag-api:6123
     ports:
       - "6124:6124"
     depends_on:
-      - bitwarden-alias-provider-server
+      - eag-api

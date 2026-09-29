@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "EAG — Easy Alias Generator",
+  "version": "0.1.0",
+  "description": "Create email aliases with your own provider.",
+  "action": { "default_popup": "index.html", "default_icon": "mail.png" },
+  "icons": { "16": "mail.png", "48": "mail.png", "128": "mail.png" },
+  "host_permissions": ["<all_urls>"]
+}
